@@ -55,3 +55,8 @@ systemctl restart xrdp
 echo "DONE"
 echo "RDP Port: 3390"
 echo "Login with normal Ubuntu user (not root)"
+
+echo "Firefox"
+apt install 
+apt update 
+snap install firefox
