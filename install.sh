@@ -158,6 +158,6 @@ ufw --force enable || true
 echo "================================="
 echo "INSTALL COMPLETE ✅"
 echo "OS   : $OS_ID $OS_VER"
-echo "RDP  : 3389 (normal user)"
+echo "RDP  : 3389 / 3390 (normal user)"
 echo "VNC  : 5901 (user: root / pass: root)"
 echo "================================="
