@@ -38,20 +38,29 @@ fi
 if command -v apt >/dev/null; then PM="apt"; elif command -v dnf >/dev/null; then PM="dnf"; else PM="pacman"; fi
 }
 
+# ---------- SUCCESS MESSAGE FUNCTION ----------
+success_msg() {
+    echo -e "\n${GREEN}✔ $1 Successfully installed!${NC}"
+    echo -e "${YELLOW}Press Enter to go back...${NC}"
+    read < /dev/tty
+}
+
 install_pkg() {
-PKG=$1
-echo -e "${YELLOW}Installing $PKG...${NC}"
-case $PM in
-    apt) sudo apt update -y && sudo apt install -y $PKG ;;
-    dnf) sudo dnf install -y $PKG ;;
-    pacman) sudo pacman -Sy --noconfirm $PKG ;;
-esac
+    PKG=$1
+    NAME=$2
+    echo -e "${YELLOW}Installing $NAME...${NC}"
+    case $PM in
+        apt) sudo apt update -y && sudo apt install -y $PKG ;;
+        dnf) sudo dnf install -y $PKG ;;
+        pacman) sudo pacman -Sy --noconfirm $PKG ;;
+    esac
+    success_msg "$NAME"
 }
 
 # ---------- ALL APPS SUB-MENU ----------
 apps_menu() {
 banner
-echo -e "${CYAN}--- APPS & BROWSERS ---${NC}"
+echo -e "${CYAN}--- APPS, BROWSERS & STORES ---${NC}"
 echo -e "${YELLOW}1.${NC} Firefox"
 echo -e "${YELLOW}2.${NC} Opera"
 echo -e "${YELLOW}3.${NC} Google Chrome"
@@ -64,36 +73,38 @@ echo -ne "${CYAN}Select an option: ${NC}"
 read a < /dev/tty
 
 case $a in
-    1) install_pkg "firefox" ;;
-    2) install_pkg "opera-stable" ;;
+    1) install_pkg "firefox" "Firefox" ;;
+    2) install_pkg "opera-stable" "Opera" ;;
     3) 
+        echo -e "${YELLOW}Downloading Chrome...${NC}"
         wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         sudo apt install -y ./google-chrome*.deb
         rm -f google-chrome*.deb
+        success_msg "Google Chrome"
         ;;
     4)
         echo -e "[Desktop Entry]\nName=YouTube\nExec=xdg-open https://www.youtube.com\nIcon=youtube\nType=Application" > ~/Desktop/YouTube.desktop
         chmod +x ~/Desktop/YouTube.desktop
-        echo -e "${GREEN}YouTube shortcut created!${NC}"
+        success_msg "YouTube Shortcut"
         ;;
     5)
-        sudo snap install whatsapp-for-linux || install_pkg "whatsapp-for-linux"
+        echo -e "${YELLOW}Installing WhatsApp...${NC}"
+        sudo snap install whatsapp-for-linux || sudo apt install -y whatsapp-for-linux
+        success_msg "WhatsApp"
         ;;
     6)
         echo -e "[Desktop Entry]\nName=Play Store\nExec=xdg-open https://play.google.com\nIcon=google-play\nType=Application" > ~/Desktop/PlayStore.desktop
         chmod +x ~/Desktop/PlayStore.desktop
-        echo -e "${GREEN}Play Store shortcut created!${NC}"
+        success_msg "Play Store Shortcut"
         ;;
     7)
         echo -e "[Desktop Entry]\nName=App Store\nExec=xdg-open https://www.apple.com/app-store/\nIcon=apple\nType=Application" > ~/Desktop/AppStore.desktop
         chmod +x ~/Desktop/AppStore.desktop
-        echo -e "${GREEN}App Store shortcut created!${NC}"
+        success_msg "App Store Shortcut"
         ;;
     0) main_menu ;;
     *) echo -e "${RED}Invalid option!${NC}"; sleep 1; apps_menu ;;
 esac
-echo -e "\nPress Enter to continue..."
-read < /dev/tty
 apps_menu
 }
 
@@ -112,14 +123,27 @@ read m < /dev/tty
 case $m in
     1) 
         banner
-        echo -e "1. Install XRDP+XFCE\n2. Install VNC\n0. Back"
+        echo -e "${YELLOW}1.${NC} Install XRDP+XFCE"
+        echo -e "${YELLOW}2.${NC} Install VNC"
+        echo -e "${YELLOW}0.${NC} Back"
         read x < /dev/tty
-        [[ $x == "1" ]] && (install_pkg "xfce4 xfce4-goodies xrdp"; sudo systemctl enable xrdp --now; echo "xfce4-session" > ~/.xsession)
-        [[ $x == "2" ]] && install_pkg "tigervnc-standalone-server xfce4"
+        if [[ $x == "1" ]]; then
+            install_pkg "xfce4 xfce4-goodies xrdp" "XRDP + XFCE"
+            sudo systemctl enable xrdp --now
+            echo "xfce4-session" > ~/.xsession
+        elif [[ $x == "2" ]]; then
+            install_pkg "tigervnc-standalone-server xfce4" "VNC Server"
+        fi
         main_menu
         ;;
     2) apps_menu ;;
-    3) curl -fsSL https://tailscale.com/install.sh | sh; sudo tailscale up ;;
+    3) 
+        echo -e "${YELLOW}Installing Tailscale...${NC}"
+        curl -fsSL https://tailscale.com/install.sh | sh
+        sudo tailscale up
+        success_msg "Tailscale"
+        main_menu
+        ;;
     0) exit 0 ;;
     *) echo -e "${RED}Invalid selection!${NC}"; sleep 1; main_menu ;;
 esac
