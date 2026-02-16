@@ -2,7 +2,7 @@
 
 # =========================
 #   AUTHOR : SDGAMER
-#   INTERACTIVE VPS INSTALLER
+#    INSTALLER
 # =========================
 
 # ---------- COLORS ----------
@@ -75,12 +75,10 @@ case $x in
     install_pkg xrdp
     sudo systemctl enable xrdp --now
     echo xfce4-session > ~/.xsession
-    echo -e "${GREEN}XRDP Installed. Port: 3389${NC}"
     ;;
 2)
     echo -e "${GREEN}Installing VNC...${NC}"
     install_pkg tigervnc-standalone-server xfce4
-    echo -e "${GREEN}VNC installed. Configure manually.${NC}"
     ;;
 0) main_menu ;;
 *) echo -e "${RED}Invalid option${NC}"; sleep 1; xrdp_menu ;;
@@ -119,18 +117,45 @@ elif command -v snap >/dev/null; then
 fi
 }
 
+# ---------- APPS ----------
 apps_menu() {
 banner
-echo -e "${YELLOW}1.${NC} ${GREEN}Firefox${NC}"
-echo -e "${YELLOW}2.${NC} ${GREEN}Google Chrome${NC}"
-echo -e "${YELLOW}3.${NC} ${GREEN}Opera${NC}"
+echo -e "${YELLOW}1.${NC} ${GREEN}YouTube (Web)${NC}"
+echo -e "${YELLOW}2.${NC} ${GREEN}WhatsApp Web${NC}"
+echo -e "${YELLOW}3.${NC} ${GREEN}Play Store (Browser/Emulator info)${NC}"
+echo -e "${YELLOW}4.${NC} ${GREEN}App Store (Browser info)${NC}"
 echo -e "${YELLOW}0.${NC} ${GREEN}Back${NC}"
 read -p "$(echo -e ${CYAN}Select: ${NC})" a
 
 case $a in
-1) install_firefox ;;
-2) install_chrome ;;
-3) install_opera ;;
+1)
+    echo -e "${GREEN}Opening YouTube in default browser...${NC}"
+    if command -v firefox >/dev/null; then
+        firefox https://www.youtube.com &
+    elif command -v google-chrome >/dev/null; then
+        google-chrome https://www.youtube.com &
+    else
+        echo -e "${RED}No browser installed!${NC}"
+    fi
+    ;;
+2)
+    echo -e "${GREEN}Opening WhatsApp Web in default browser...${NC}"
+    if command -v firefox >/dev/null; then
+        firefox https://web.whatsapp.com &
+    elif command -v google-chrome >/dev/null; then
+        google-chrome https://web.whatsapp.com &
+    else
+        echo -e "${RED}No browser installed!${NC}"
+    fi
+    ;;
+3)
+    echo -e "${YELLOW}Play Store cannot be natively installed on Linux.${NC}"
+    echo "Use an Android emulator or visit https://play.google.com/store"
+    ;;
+4)
+    echo -e "${YELLOW}App Store cannot be natively installed on Linux.${NC}"
+    echo "Visit https://www.apple.com/app-store/"
+    ;;
 0) main_menu ;;
 *) echo -e "${RED}Invalid option${NC}"; sleep 1; apps_menu ;;
 esac
@@ -148,7 +173,6 @@ elif command -v snap >/dev/null; then
     sudo snap install tailscale
 fi
 sudo tailscale up
-echo -e "${GREEN}Tailscale is up.${NC}"
 read -p "Press Enter to continue..."
 main_menu
 }
@@ -161,14 +185,16 @@ echo -e "${CYAN}Package Manager: ${NC}$PM"
 echo
 echo -e "${YELLOW}1.${NC} ${GREEN}XRDP + XFCE / VNC${NC}"
 echo -e "${YELLOW}2.${NC} ${GREEN}Browsers${NC}"
-echo -e "${YELLOW}3.${NC} ${GREEN}Tailscale${NC}"
+echo -e "${YELLOW}3.${NC} ${GREEN}Apps${NC}"
+echo -e "${YELLOW}4.${NC} ${GREEN}Tailscale${NC}"
 echo -e "${YELLOW}0.${NC} ${GREEN}Exit${NC}"
 read -p "$(echo -e ${CYAN}Select: ${NC})" m
 
 case $m in
 1) xrdp_menu ;;
 2) apps_menu ;;
-3) tailscale_install ;;
+3) apps_menu ;;
+4) tailscale_install ;;
 0) exit ;;
 *) echo -e "${RED}Invalid option${NC}"; sleep 1; main_menu ;;
 esac
