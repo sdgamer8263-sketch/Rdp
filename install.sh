@@ -2,7 +2,7 @@
 
 # =======================================
 #   AUTHOR    : SDGAMER
-#   TOOL      : ULTIMATE VPS/OS INSTALLER
+#   TOOL      : ULTIMATE VPS/OS INSTALLER (VNC REMOVED)
 # =======================================
 
 # ---------- COLORS ----------
@@ -63,13 +63,12 @@ install_pkg() {
 
 # ---------- SUB-MENUS ----------
 
-# 1. XRDP & VNC MENU
+# 1. XRDP MENU (VNC REMOVED)
 xrdp_menu() {
     banner
-    echo -e "${CYAN}--- [1] RDP & VNC SETUP ---${NC}"
+    echo -e "${CYAN}--- [1] RDP SETUP ---${NC}"
     echo -e "${YELLOW}1.${NC} Install XRDP + XFCE (Standard)"
-    echo -e "${YELLOW}2.${NC} Install TigerVNC Server"
-    echo -e "${YELLOW}3.${NC} Fix RDP Black Screen"
+    echo -e "${YELLOW}2.${NC} Fix RDP Black Screen"
     echo -e "${YELLOW}0.${NC} Back"
     echo -ne "${CYAN}Select: ${NC}"
     read -r x < /dev/tty
@@ -77,8 +76,7 @@ xrdp_menu() {
         1) install_pkg "xfce4 xfce4-goodies xrdp" "XRDP"
            sudo systemctl enable xrdp --now
            echo "xfce4-session" > ~/.xsession ;;
-        2) install_pkg "tigervnc-standalone-server xfce4" "VNC" ;;
-        3) echo "unset DBUS_SESSION_BUS_ADDRESS" >> ~/.xsession
+        2) echo "unset DBUS_SESSION_BUS_ADDRESS" >> ~/.xsession
            echo "exec startxfce4" >> ~/.xsession
            success_msg "RDP Fix" ;;
         0) main_menu ;;
@@ -163,7 +161,7 @@ main_menu() {
     banner
     echo -e "${YELLOW}Detected OS: ${NC}$OS | ${YELLOW}PM: ${NC}$PM"
     echo "---------------------------------------"
-    echo -e "${CYAN}1.${NC} XRDP / VNC Setup"
+    echo -e "${CYAN}1.${NC} XRDP Setup (Remote Desktop)"
     echo -e "${CYAN}2.${NC} Web Browsers (Chrome, Firefox, etc.)"
     echo -e "${CYAN}3.${NC} Social Apps (WhatsApp, Telegram)"
     echo -e "${CYAN}4.${NC} Web Stores (YouTube, PlayStore)"
