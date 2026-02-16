@@ -6,7 +6,6 @@ export DEBIAN_FRONTEND=noninteractive
 # AUTO SUDO
 # ===============================
 if [ "$EUID" -ne 0 ]; then
-  echo "Re-running with sudo..."
   exec sudo bash "$0"
 fi
 
@@ -40,24 +39,24 @@ echo "Detected OS : $OS_ID $OS_VER"
 echo "================================="
 
 if [[ "$OS_ID" != "ubuntu" && "$OS_ID" != "debian" ]]; then
-  echo "❌ Unsupported OS"
+  echo "Unsupported OS"
   exit 1
 fi
 
 # ===============================
-# SYSTEM UPDATE
+# UPDATE SYSTEM
 # ===============================
 apt update -y
 apt -y -o Dpkg::Options::="--force-confnew" full-upgrade || true
 dpkg --configure -a || true
 
 # ===============================
-# INSTALL BASE PACKAGES
+# INSTALL PACKAGES
 # ===============================
 apt install -y xfce4 xfce4-goodies xrdp tigervnc-standalone-server dbus-x11 curl ufw
 
 # ===============================
-# XRDP CONFIG (PORT 3389)
+# XRDP CONFIG (3389)
 # ===============================
 sed -i 's/^port=.*/port=3389/' /etc/xrdp/xrdp.ini
 echo "xfce4-session" > /etc/skel/.xsession
@@ -86,17 +85,23 @@ ResultActive=yes
 EOF
 
 # ===============================
-# VNC SETUP (AUTO START)
+# VNC SETUP (ROOT / PASSWORD = root)
 # ===============================
-mkdir -p /etc/vnc
-cat <<EOF >/etc/vnc/xstartup
+mkdir -p /root/.vnc
+
+# Auto set VNC password = root
+printf "root\nroot\nn\n" | vncpasswd -f > /root/.vnc/passwd
+chmod 600 /root/.vnc/passwd
+
+cat <<EOF >/root/.vnc/xstartup
 #!/bin/sh
 unset SESSION_MANAGER
 unset DBUS_SESSION_BUS_ADDRESS
 exec startxfce4 &
 EOF
-chmod +x /etc/vnc/xstartup
+chmod +x /root/.vnc/xstartup
 
+# systemd service
 cat <<EOF >/etc/systemd/system/vncserver@.service
 [Unit]
 Description=TigerVNC Server
@@ -105,7 +110,9 @@ After=network.target
 [Service]
 Type=forking
 User=%i
-ExecStart=/usr/bin/vncserver -xstartup /etc/vnc/xstartup :1
+PAMName=login
+ExecStartPre=-/usr/bin/vncserver -kill :1
+ExecStart=/usr/bin/vncserver :1
 ExecStop=/usr/bin/vncserver -kill :1
 
 [Install]
@@ -120,30 +127,22 @@ systemctl start vncserver@root.service
 # FIREFOX
 # ===============================
 if [ "$OS_ID" = "ubuntu" ]; then
-  echo "Installing Firefox via SNAP (Ubuntu)"
   snap install firefox
 else
-  echo "Installing Firefox via APT (Debian)"
   apt install -y firefox-esr
 fi
 
 # ===============================
-# TAILSCALE (AS YOU ASKED)
+# TAILSCALE (AS REQUESTED)
 # ===============================
-echo "Installing Tailscale..."
-
 if [ "$OS_ID" = "ubuntu" ]; then
-  echo "Ubuntu → snap install tailscale"
   snap install tailscale
 else
-  echo "Debian → apt install tailscale"
   apt install -y tailscale
 fi
 
 systemctl enable tailscaled
 systemctl start tailscaled
-
-echo "Running tailscale up..."
 tailscale up || true
 
 # ===============================
@@ -157,8 +156,8 @@ ufw --force enable || true
 # DONE
 # ===============================
 echo "================================="
-echo "✅ INSTALL COMPLETE"
+echo "INSTALL COMPLETE ✅"
 echo "OS   : $OS_ID $OS_VER"
-echo "RDP  : 3389"
-echo "VNC  : 5901"
+echo "RDP  : 3389 (normal user)"
+echo "VNC  : 5901 (user: root / pass: root)"
 echo "================================="
