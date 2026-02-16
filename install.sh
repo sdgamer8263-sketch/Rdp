@@ -2,7 +2,7 @@
 
 # =========================
 #   AUTHOR : SDGAMER
-#   FULL AUTOMATIC VPS INSTALLER
+#   INTERACTIVE VPS INSTALLER
 # =========================
 
 # ---------- COLORS ----------
@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# ---------- BANNER + LOGO ----------
+# ---------- BANNER ----------
 banner() {
 clear
 echo -e "${CYAN}"
@@ -29,7 +29,7 @@ echo "======================================="
 echo
 }
 
-# ---------- OS + PACKAGE MANAGER DETECT ----------
+# ---------- OS + PACKAGE MANAGER ----------
 detect_os() {
 if [ -f /etc/os-release ]; then
     . /etc/os-release
@@ -60,28 +60,38 @@ case $PM in
 esac
 }
 
-# ---------- XRDP + XFCE AUTO ----------
-xrdp_auto() {
+# ---------- XRDP / VNC ----------
+xrdp_menu() {
 banner
-echo -e "${GREEN}Installing XFCE + XRDP automatically...${NC}"
-install_pkg xfce4 xfce4-goodies
-install_pkg xrdp
-sudo systemctl enable xrdp --now
-echo xfce4-session > ~/.xsession
-echo -e "${GREEN}XRDP Installed. Port: 3389${NC}"
+echo -e "${YELLOW}1.${NC} ${GREEN}Install XRDP + XFCE${NC}"
+echo -e "${YELLOW}2.${NC} ${GREEN}Install VNC${NC}"
+echo -e "${YELLOW}0.${NC} ${GREEN}Back${NC}"
+read -p "$(echo -e ${CYAN}Select: ${NC})" x
+
+case $x in
+1)
+    echo -e "${GREEN}Installing XFCE + XRDP...${NC}"
+    install_pkg xfce4 xfce4-goodies
+    install_pkg xrdp
+    sudo systemctl enable xrdp --now
+    echo xfce4-session > ~/.xsession
+    echo -e "${GREEN}XRDP Installed. Port: 3389${NC}"
+    ;;
+2)
+    echo -e "${GREEN}Installing VNC...${NC}"
+    install_pkg tigervnc-standalone-server xfce4
+    echo -e "${GREEN}VNC installed. Configure manually.${NC}"
+    ;;
+0) main_menu ;;
+*) echo -e "${RED}Invalid option${NC}"; sleep 1; xrdp_menu ;;
+esac
+read -p "Press Enter to continue..."
+xrdp_menu
 }
 
-# ---------- VNC AUTO ----------
-vnc_auto() {
-banner
-echo -e "${GREEN}Installing VNC automatically...${NC}"
-install_pkg tigervnc-standalone-server xfce4
-echo -e "${GREEN}VNC Installed. Configure manually.${NC}"
-}
-
-# ---------- BROWSERS AUTO ----------
-install_firefox_auto() {
-echo -e "${GREEN}Installing Firefox automatically...${NC}"
+# ---------- BROWSERS ----------
+install_firefox() {
+echo -e "${GREEN}Installing Firefox...${NC}"
 if command -v apt >/dev/null; then
     sudo apt update -y && sudo apt install -y firefox
 elif command -v snap >/dev/null; then
@@ -89,8 +99,8 @@ elif command -v snap >/dev/null; then
 fi
 }
 
-install_chrome_auto() {
-echo -e "${GREEN}Installing Google Chrome automatically...${NC}"
+install_chrome() {
+echo -e "${GREEN}Installing Google Chrome...${NC}"
 if command -v apt >/dev/null; then
     wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     sudo apt install -y ./google-chrome*.deb
@@ -100,8 +110,8 @@ elif command -v snap >/dev/null; then
 fi
 }
 
-install_opera_auto() {
-echo -e "${GREEN}Installing Opera automatically...${NC}"
+install_opera() {
+echo -e "${GREEN}Installing Opera...${NC}"
 if command -v apt >/dev/null; then
     sudo apt update -y && sudo apt install -y opera
 elif command -v snap >/dev/null; then
@@ -109,18 +119,29 @@ elif command -v snap >/dev/null; then
 fi
 }
 
-browsers_auto() {
+apps_menu() {
 banner
-install_firefox_auto
-install_chrome_auto
-install_opera_auto
-echo -e "${GREEN}All browsers installed.${NC}"
+echo -e "${YELLOW}1.${NC} ${GREEN}Firefox${NC}"
+echo -e "${YELLOW}2.${NC} ${GREEN}Google Chrome${NC}"
+echo -e "${YELLOW}3.${NC} ${GREEN}Opera${NC}"
+echo -e "${YELLOW}0.${NC} ${GREEN}Back${NC}"
+read -p "$(echo -e ${CYAN}Select: ${NC})" a
+
+case $a in
+1) install_firefox ;;
+2) install_chrome ;;
+3) install_opera ;;
+0) main_menu ;;
+*) echo -e "${RED}Invalid option${NC}"; sleep 1; apps_menu ;;
+esac
+read -p "Press Enter to continue..."
+apps_menu
 }
 
-# ---------- TAILSCALE AUTO ----------
-tailscale_auto() {
+# ---------- TAILSCALE ----------
+tailscale_install() {
 banner
-echo -e "${GREEN}Installing Tailscale automatically...${NC}"
+echo -e "${GREEN}Installing Tailscale...${NC}"
 if command -v apt >/dev/null; then
     sudo apt update -y && sudo apt install -y tailscale
 elif command -v snap >/dev/null; then
@@ -128,19 +149,31 @@ elif command -v snap >/dev/null; then
 fi
 sudo tailscale up
 echo -e "${GREEN}Tailscale is up.${NC}"
+read -p "Press Enter to continue..."
+main_menu
 }
 
-# ---------- MAIN AUTOMATIC INSTALL ----------
-main_auto() {
+# ---------- MAIN MENU ----------
+main_menu() {
 banner
-echo -e "${GREEN}Starting full automatic VPS setup...${NC}"
-xrdp_auto
-vnc_auto
-browsers_auto
-tailscale_auto
-echo -e "${GREEN}All tasks completed successfully!${NC}"
+echo -e "${CYAN}Detected OS: ${NC}$OS"
+echo -e "${CYAN}Package Manager: ${NC}$PM"
+echo
+echo -e "${YELLOW}1.${NC} ${GREEN}XRDP + XFCE / VNC${NC}"
+echo -e "${YELLOW}2.${NC} ${GREEN}Browsers${NC}"
+echo -e "${YELLOW}3.${NC} ${GREEN}Tailscale${NC}"
+echo -e "${YELLOW}0.${NC} ${GREEN}Exit${NC}"
+read -p "$(echo -e ${CYAN}Select: ${NC})" m
+
+case $m in
+1) xrdp_menu ;;
+2) apps_menu ;;
+3) tailscale_install ;;
+0) exit ;;
+*) echo -e "${RED}Invalid option${NC}"; sleep 1; main_menu ;;
+esac
 }
 
 # ---------- START ----------
 detect_os
-main_auto
+main_menu
