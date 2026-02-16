@@ -2,7 +2,7 @@
 
 # =========================
 #   AUTHOR : SDGAMER
-#   FULL ALL-IN-ONE  INSTALLER
+#   FULL AUTOMATIC VPS INSTALLER
 # =========================
 
 # ---------- COLORS ----------
@@ -60,139 +60,87 @@ case $PM in
 esac
 }
 
-# ---------- XRDP + XFCE ----------
-xrdp_menu() {
+# ---------- XRDP + XFCE AUTO ----------
+xrdp_auto() {
 banner
-echo -e "${YELLOW}1.${NC} ${GREEN}Install XRDP + XFCE${NC}"
-echo -e "${YELLOW}2.${NC} ${GREEN}Install VNC${NC}"
-echo -e "${YELLOW}0.${NC} ${GREEN}Back${NC}"
-read -p "$(echo -e ${CYAN}Select: ${NC})" x
-
-case $x in
-1)
-    echo -e "${GREEN}Installing XFCE + XRDP...${NC}"
-    install_pkg xfce4 xfce4-goodies
-    install_pkg xrdp
-    sudo systemctl enable xrdp --now
-    echo xfce4-session > ~/.xsession
-    echo -e "${GREEN}XRDP Installed. Port: 3389${NC}"
-    ;;
-2)
-    echo -e "${GREEN}Installing VNC...${NC}"
-    install_pkg tigervnc-standalone-server xfce4
-    echo "VNC installed. Configure manually."
-    ;;
-0) main_menu ;;
-*) echo -e "${RED}Invalid option${NC}"; sleep 1; xrdp_menu ;;
-esac
-read -p "Press Enter..."
-xrdp_menu
+echo -e "${GREEN}Installing XFCE + XRDP automatically...${NC}"
+install_pkg xfce4 xfce4-goodies
+install_pkg xrdp
+sudo systemctl enable xrdp --now
+echo xfce4-session > ~/.xsession
+echo -e "${GREEN}XRDP Installed. Port: 3389${NC}"
 }
 
-# ---------- BROWSERS ----------
-install_firefox() {
+# ---------- VNC AUTO ----------
+vnc_auto() {
 banner
-echo -e "${GREEN}Installing Firefox...${NC}"
+echo -e "${GREEN}Installing VNC automatically...${NC}"
+install_pkg tigervnc-standalone-server xfce4
+echo -e "${GREEN}VNC Installed. Configure manually.${NC}"
+}
+
+# ---------- BROWSERS AUTO ----------
+install_firefox_auto() {
+echo -e "${GREEN}Installing Firefox automatically...${NC}"
 if command -v apt >/dev/null; then
-    sudo apt update -y
-    sudo apt install -y firefox
+    sudo apt update -y && sudo apt install -y firefox
 elif command -v snap >/dev/null; then
     sudo snap install firefox
-else
-    echo -e "${RED}No supported package manager found for Firefox${NC}"
 fi
-read -p "Press Enter..."
-apps_menu
 }
 
-install_chrome() {
-banner
-echo -e "${GREEN}Installing Google Chrome...${NC}"
+install_chrome_auto() {
+echo -e "${GREEN}Installing Google Chrome automatically...${NC}"
 if command -v apt >/dev/null; then
     wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
     sudo apt install -y ./google-chrome*.deb
     rm -f google-chrome*.deb
 elif command -v snap >/dev/null; then
     sudo snap install google-chrome
-else
-    echo -e "${RED}No supported package manager found for Chrome${NC}"
 fi
-read -p "Press Enter..."
-apps_menu
 }
 
-install_opera() {
-banner
-echo -e "${GREEN}Installing Opera...${NC}"
+install_opera_auto() {
+echo -e "${GREEN}Installing Opera automatically...${NC}"
 if command -v apt >/dev/null; then
-    sudo apt update -y
-    sudo apt install -y opera
+    sudo apt update -y && sudo apt install -y opera
 elif command -v snap >/dev/null; then
     sudo snap install opera
-else
-    echo -e "${RED}No supported package manager found for Opera${NC}"
 fi
-read -p "Press Enter..."
-apps_menu
 }
 
-apps_menu() {
+browsers_auto() {
 banner
-echo -e "${YELLOW}1.${NC} ${GREEN}Firefox${NC}"
-echo -e "${YELLOW}2.${NC} ${GREEN}Google Chrome${NC}"
-echo -e "${YELLOW}3.${NC} ${GREEN}Opera${NC}"
-echo -e "${YELLOW}0.${NC} ${GREEN}Back${NC}"
-read -p "$(echo -e ${CYAN}Select: ${NC})" a
-
-case $a in
-1) install_firefox ;;
-2) install_chrome ;;
-3) install_opera ;;
-0) main_menu ;;
-*) echo -e "${RED}Invalid option${NC}"; sleep 1; apps_menu ;;
-esac
+install_firefox_auto
+install_chrome_auto
+install_opera_auto
+echo -e "${GREEN}All browsers installed.${NC}"
 }
 
-# ---------- TAILSCALE ----------
-tailscale_install() {
+# ---------- TAILSCALE AUTO ----------
+tailscale_auto() {
 banner
-echo -e "${GREEN}Installing Tailscale...${NC}"
+echo -e "${GREEN}Installing Tailscale automatically...${NC}"
 if command -v apt >/dev/null; then
-    sudo apt update -y
-    sudo apt install -y tailscale
+    sudo apt update -y && sudo apt install -y tailscale
 elif command -v snap >/dev/null; then
     sudo snap install tailscale
-else
-    echo -e "${RED}No supported package manager found for Tailscale${NC}"
-    read -p "Press Enter..."
-    main_menu
 fi
 sudo tailscale up
-read -p "Press Enter..."
-main_menu
+echo -e "${GREEN}Tailscale is up.${NC}"
 }
 
-# ---------- MAIN MENU ----------
-main_menu() {
+# ---------- MAIN AUTOMATIC INSTALL ----------
+main_auto() {
 banner
-echo -e "${CYAN}Detected OS: ${NC}$OS"
-echo -e "${CYAN}Package Manager: ${NC}$PM"
-echo
-echo -e "${YELLOW}1.${NC} ${GREEN}XRDP + XFCE / VNC${NC}"
-echo -e "${YELLOW}2.${NC} ${GREEN}Browsers${NC}"
-echo -e "${YELLOW}3.${NC} ${GREEN}Tailscale${NC}"
-echo -e "${YELLOW}0.${NC} ${GREEN}Exit${NC}"
-read -p "$(echo -e ${CYAN}Select: ${NC})" m
-
-case $m in
-1) xrdp_menu ;;
-2) apps_menu ;;
-3) tailscale_install ;;
-0) exit ;;
-*) echo -e "${RED}Invalid option${NC}"; sleep 1; main_menu ;;
-esac
+echo -e "${GREEN}Starting full automatic VPS setup...${NC}"
+xrdp_auto
+vnc_auto
+browsers_auto
+tailscale_auto
+echo -e "${GREEN}All tasks completed successfully!${NC}"
 }
 
 # ---------- START ----------
 detect_os
-main_menu
+main_auto
