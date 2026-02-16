@@ -1,3 +1,4 @@
+
 #!/bin/bash
 set -e
 
@@ -60,3 +61,5 @@ echo "Firefox"
 apt install 
 apt update 
 snap install firefox
+snap install tailscale 
+tailscale up 
