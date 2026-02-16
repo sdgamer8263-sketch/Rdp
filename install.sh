@@ -1,7 +1,5 @@
 #!/bin/bash
 set -e
-
-# Force non-interactive mode (IMPORTANT)
 export DEBIAN_FRONTEND=noninteractive
 
 # Root check
@@ -10,37 +8,61 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Ubuntu check
-if ! grep -qi ubuntu /etc/os-release; then
-  echo "Ubuntu LTS only"
+clear
+
+# =======================
+# BANNER
+# =======================
+cat <<'EOF'
+███████╗██████╗ ██╗  ██╗ █████╗ ███████╗ █████╗ ███╗   ███╗███████╗██████╗
+██╔════╝██╔══██╗██║  ██║██╔══██╗██╔════╝██╔══██╗████╗ ████║██╔════╝██╔══██╗
+███████╗██║  ██║███████║███████║█████╗  ███████║██╔████╔██║█████╗  ██████╔╝
+╚════██║██║  ██║██╔══██║██╔══██║██╔══╝  ██╔══██║██║╚██╔╝██║██╔══╝  ██╔══██╗
+███████║██████╔╝██║  ██║██║  ██║███████╗██║  ██║██║ ╚═╝ ██║███████╗██║  ██║
+╚══════╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝
+
+              SKA HOSTING
+ XRDP + VNC + XFCE + FIREFOX + TAILSCALE
+EOF
+
+echo "================================="
+
+# =======================
+# OS DETECT
+# =======================
+OS_ID=$(grep '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"')
+
+if [[ "$OS_ID" != "ubuntu" && "$OS_ID" != "debian" ]]; then
+  echo "❌ Unsupported OS"
   exit 1
 fi
 
-echo "=== Ubuntu LTS xRDP + XFCE Setup ==="
+echo "✅ Detected OS: $OS_ID"
 
-echo "Updating system..."
+# =======================
+# SYSTEM UPDATE
+# =======================
 apt update -y
 apt -y -o Dpkg::Options::="--force-confnew" full-upgrade
-
-echo "Fixing any pending packages..."
 dpkg --configure -a || true
 
-echo "Installing XFCE..."
-apt install -y xfce4 xfce4-goodies dbus-x11
+# =======================
+# INSTALL DESKTOP + XRDP + VNC
+# =======================
+apt install -y xfce4 xfce4-goodies dbus-x11 xrdp tigervnc-standalone-server tigervnc-common
 
-echo "Installing xRDP..."
-apt install -y xrdp
+adduser xrdp ssl-cert || true
 
-echo "Adding xRDP to ssl-cert group..."
-adduser xrdp ssl-cert
-
-echo "Configuring XFCE session..."
+# =======================
+# XFCE SESSION
+# =======================
 echo "xfce4-session" > /etc/skel/.xsession
+sed -i '/^exec /d' /etc/xrdp/startwm.sh
+echo "startxfce4" >> /etc/xrdp/startwm.sh
 
-sed -i.bak '/^exec /d' /etc/xrdp/startwm.sh
-grep -q startxfce4 /etc/xrdp/startwm.sh || echo "startxfce4" >> /etc/xrdp/startwm.sh
-
-echo "Fixing black screen issue..."
+# =======================
+# POLKIT FIX
+# =======================
 mkdir -p /etc/polkit-1/localauthority/50-local.d
 cat <<EOF >/etc/polkit-1/localauthority/50-local.d/46-allow-colord.pkla
 [Allow Colord all Users]
@@ -51,31 +73,59 @@ ResultInactive=yes
 ResultActive=yes
 EOF
 
-echo "Setting RDP port to 3390..."
-sed -i 's/port=3389/port=3390/g' /etc/xrdp/xrdp.ini
-
-echo "Configuring firewall..."
-ufw allow 3390/tcp || true
-ufw --force enable || true
-
-echo "Starting xRDP..."
+# =======================
+# AUTO START XRDP
+# =======================
 systemctl enable xrdp
+systemctl enable xrdp-sesman
 systemctl restart xrdp
 
-echo "================================="
-echo "INSTALL COMPLETE"
-echo "RDP Port : 3390"
-echo "Login    : Normal Ubuntu user"
-echo "================================="
+# =======================
+# RDP PORT
+# =======================
+sed -i 's/port=3389/port=3390/g' /etc/xrdp/xrdp.ini
+systemctl restart xrdp
 
-echo "Xrdp complete"
-echo "Firefox install"
-apt install
-apt update
-snap install firefox
-echo "================================="
-echo "Firefox Complete 🤗"
-snap install tailscale
-echo "Complete 🤗"
-tailscale up
-echo "Success 🤗"
+# =======================
+# VNC AUTO START (DISPLAY :1)
+# =======================
+cat <<EOF >/etc/systemd/system/vncserver@:1.service
+[Unit]
+Description=TigerVNC Server
+After=network.target
+
+[Service]
+Type=forking
+User=root
+ExecStart=/usr/bin/vncserver :1 -geometry 1280x800 -depth 24
+ExecStop=/usr/bin/vncserver -kill :1
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable vncserver@:1.service
+systemctl start vncserver@:1.service
+
+# =======================
+# FIREWALL
+# =======================
+ufw allow 3390/tcp || true
+ufw allow 5901/tcp || true
+ufw --force enable || true
+
+# =======================
+# FIREFOX
+# =======================
+if [[ "$OS_ID" == "ubuntu" ]]; then
+  snap install firefox
+else
+  apt install -y firefox-esr
+fi
+
+#
+echo "================================"
+echo "======================================"
+echo "SUCCESS "
