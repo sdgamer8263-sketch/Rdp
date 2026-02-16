@@ -1,12 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# ========== COLORS ==========
+# =========================
+#   AUTHOR : SDGAMER
+#   FULL ALL-IN-ONE  INSTALLER
+# =========================
+
+# ---------- COLORS ----------
 RED='\033[0;31m'
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# ========== BANNER + LOGO ==========
+# ---------- BANNER + LOGO ----------
 banner() {
 clear
 echo -e "${CYAN}"
@@ -23,7 +29,7 @@ echo "======================================="
 echo
 }
 
-# ========== OS + PACKAGE MANAGER DETECT ==========
+# ---------- OS + PACKAGE MANAGER DETECT ----------
 detect_os() {
 if [ -f /etc/os-release ]; then
     . /etc/os-release
@@ -39,7 +45,7 @@ elif command -v pacman >/dev/null; then
 elif command -v snap >/dev/null; then
     PM="snap"
 else
-    echo "No supported package manager found"
+    echo -e "${RED}No supported package manager found${NC}"
     exit 1
 fi
 }
@@ -47,96 +53,146 @@ fi
 install_pkg() {
 PKG=$1
 case $PM in
-    apt) sudo apt update && sudo apt install -y $PKG ;;
+    apt) sudo apt update -y && sudo apt install -y $PKG ;;
     dnf) sudo dnf install -y $PKG ;;
     pacman) sudo pacman -Sy --noconfirm $PKG ;;
     snap) sudo snap install $PKG ;;
 esac
 }
 
-# ========== XRDP + XFCE ==========
+# ---------- XRDP + XFCE ----------
 xrdp_menu() {
 banner
-echo "1. Install XRDP + XFCE"
-echo "2. Install VNC"
-echo "0. Back"
-read -p "Select: " x
+echo -e "${YELLOW}1.${NC} ${GREEN}Install XRDP + XFCE${NC}"
+echo -e "${YELLOW}2.${NC} ${GREEN}Install VNC${NC}"
+echo -e "${YELLOW}0.${NC} ${GREEN}Back${NC}"
+read -p "$(echo -e ${CYAN}Select: ${NC})" x
 
 case $x in
 1)
-    install_pkg xfce4
+    echo -e "${GREEN}Installing XFCE + XRDP...${NC}"
+    install_pkg xfce4 xfce4-goodies
     install_pkg xrdp
-    sudo systemctl enable xrdp
-    sudo systemctl start xrdp
+    sudo systemctl enable xrdp --now
+    echo xfce4-session > ~/.xsession
+    echo -e "${GREEN}XRDP Installed. Port: 3389${NC}"
     ;;
 2)
-    install_pkg tigervnc
+    echo -e "${GREEN}Installing VNC...${NC}"
+    install_pkg tigervnc-standalone-server xfce4
+    echo "VNC installed. Configure manually."
     ;;
 0) main_menu ;;
+*) echo -e "${RED}Invalid option${NC}"; sleep 1; xrdp_menu ;;
 esac
 read -p "Press Enter..."
 xrdp_menu
 }
 
-# ========== BROWSERS & APPS ==========
-apps_menu() {
+# ---------- BROWSERS ----------
+install_firefox() {
 banner
-echo "1. Firefox"
-echo "2. Chrome"
-echo "3. Opera"
-echo "4. YouTube (Web)"
-echo "5. WhatsApp (Web)"
-echo "0. Back"
-read -p "Select: " a
-
-case $a in
-1) install_pkg firefox ;;
-2)
-   if [ "$PM" = "apt" ]; then
-     wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-     sudo apt install ./google-chrome*.deb
-   else
-     install_pkg google-chrome
-   fi
-   ;;
-3) install_pkg opera ;;
-4) echo "Use browser → youtube.com" ;;
-5) echo "Use browser → web.whatsapp.com" ;;
-0) main_menu ;;
-esac
+echo -e "${GREEN}Installing Firefox...${NC}"
+if command -v apt >/dev/null; then
+    sudo apt update -y
+    sudo apt install -y firefox
+elif command -v snap >/dev/null; then
+    sudo snap install firefox
+else
+    echo -e "${RED}No supported package manager found for Firefox${NC}"
+fi
 read -p "Press Enter..."
 apps_menu
 }
 
-# ========== TAILSCALE ==========
+install_chrome() {
+banner
+echo -e "${GREEN}Installing Google Chrome...${NC}"
+if command -v apt >/dev/null; then
+    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    sudo apt install -y ./google-chrome*.deb
+    rm -f google-chrome*.deb
+elif command -v snap >/dev/null; then
+    sudo snap install google-chrome
+else
+    echo -e "${RED}No supported package manager found for Chrome${NC}"
+fi
+read -p "Press Enter..."
+apps_menu
+}
+
+install_opera() {
+banner
+echo -e "${GREEN}Installing Opera...${NC}"
+if command -v apt >/dev/null; then
+    sudo apt update -y
+    sudo apt install -y opera
+elif command -v snap >/dev/null; then
+    sudo snap install opera
+else
+    echo -e "${RED}No supported package manager found for Opera${NC}"
+fi
+read -p "Press Enter..."
+apps_menu
+}
+
+apps_menu() {
+banner
+echo -e "${YELLOW}1.${NC} ${GREEN}Firefox${NC}"
+echo -e "${YELLOW}2.${NC} ${GREEN}Google Chrome${NC}"
+echo -e "${YELLOW}3.${NC} ${GREEN}Opera${NC}"
+echo -e "${YELLOW}0.${NC} ${GREEN}Back${NC}"
+read -p "$(echo -e ${CYAN}Select: ${NC})" a
+
+case $a in
+1) install_firefox ;;
+2) install_chrome ;;
+3) install_opera ;;
+0) main_menu ;;
+*) echo -e "${RED}Invalid option${NC}"; sleep 1; apps_menu ;;
+esac
+}
+
+# ---------- TAILSCALE ----------
 tailscale_install() {
 banner
-curl -fsSL https://tailscale.com/install.sh | sh
+echo -e "${GREEN}Installing Tailscale...${NC}"
+if command -v apt >/dev/null; then
+    sudo apt update -y
+    sudo apt install -y tailscale
+elif command -v snap >/dev/null; then
+    sudo snap install tailscale
+else
+    echo -e "${RED}No supported package manager found for Tailscale${NC}"
+    read -p "Press Enter..."
+    main_menu
+fi
 sudo tailscale up
 read -p "Press Enter..."
 main_menu
 }
 
-# ========== MAIN MENU ==========
+# ---------- MAIN MENU ----------
 main_menu() {
 banner
-echo "Detected OS: $OS"
-echo "Package Manager: $PM"
+echo -e "${CYAN}Detected OS: ${NC}$OS"
+echo -e "${CYAN}Package Manager: ${NC}$PM"
 echo
-echo "1. XRDP + XFCE / VNC"
-echo "2. Browsers & Apps"
-echo "3. Tailscale (install + up)"
-echo "0. Exit"
-read -p "Select: " m
+echo -e "${YELLOW}1.${NC} ${GREEN}XRDP + XFCE / VNC${NC}"
+echo -e "${YELLOW}2.${NC} ${GREEN}Browsers${NC}"
+echo -e "${YELLOW}3.${NC} ${GREEN}Tailscale${NC}"
+echo -e "${YELLOW}0.${NC} ${GREEN}Exit${NC}"
+read -p "$(echo -e ${CYAN}Select: ${NC})" m
 
 case $m in
 1) xrdp_menu ;;
 2) apps_menu ;;
 3) tailscale_install ;;
 0) exit ;;
+*) echo -e "${RED}Invalid option${NC}"; sleep 1; main_menu ;;
 esac
 }
 
-# ========== START ==========
+# ---------- START ----------
 detect_os
 main_menu
